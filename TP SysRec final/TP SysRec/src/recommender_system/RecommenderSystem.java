@@ -96,12 +96,18 @@ public class RecommenderSystem {
         Float[][] CosMatrix = this.calculateSimilarity();
         // La matrice finale à renvoyer => contient les notes calculés
         Float MissingMatrix[][] = new Float[nbUsers][nbItems];
+        //boucle pour initialiser le MissingMatrix à -1
+        for(int l = 0; l<nbUsers; l++){
+            for(int c = 0; c<nbItems; c++){
+                MissingMatrix[l][c] = -1.0f;
+            }
+        }
         float NoteNulle = -1.0f;
         // on itère sur tout les utilisateurs pour trouver les notes manquantes
         for(int i=0; i<nbUsers;i++){
             for(int j=0; j<nbItems; j++){
                 // On reset les sommes de notes pondérés et le nb de notes prises pour le calcul
-                Float sommeNotesPond = 0.0f;
+                float sommeNotesPond = 0.0f;
                 int notesPrises = 0;
                 // Si la note est déjà renseignée, on la copie dans le tableau final
                 if(users.get(i).get(j) != NoteNulle) {
@@ -122,12 +128,64 @@ public class RecommenderSystem {
                     }
                     // Quand la boucle est terminée, on calcule la note théorique pondérée
                     // et on la stocke dans la matrice finale
-                    Float noteFinale = (float) sommeNotesPond/(float) notesPrises;
-                    MissingMatrix[i][j] = noteFinale;
+                    // Si on a considérer au moins 1 note, on calcule la note finale
+                    if (notesPrises != 0){
+                        float noteFinale = (float) sommeNotesPond/(float) notesPrises;
+                        MissingMatrix[i][j] = noteFinale;
+                    }
+
                 }
             }
         }
         return MissingMatrix;
+    }
+
+    private float getMax(ArrayList<Float> l){
+        float max;
+        if(l.size()!=0){
+            max = l.get(0);
+            for(int i = 0; i<l.size(); i++){
+                if(l.get(i)>max){
+                    max = l.get(i);
+                }
+            }
+        }else{
+            max = -1.0f;
+        }
+        return max;
+    }
+
+    // etant donné user et nombre d'objet k les plus aimés à trouver
+    public ArrayList<Float> getBestItems(int u, int k){
+        Float[][] matrixOfItems = this.calculerNotesManquantes();
+        ArrayList<Float> resultat = new ArrayList<Float>();
+        // getuser
+        ArrayList <Float> items_of_user = new ArrayList<Float>();
+        ArrayList <Float> items_of_users_immutable = new ArrayList<Float>();
+        // get items of user
+        for(int item = 0; item<matrixOfItems[u].length; item++){
+            items_of_user.add(matrixOfItems[u][item]);
+            items_of_users_immutable.add(matrixOfItems[u][item]);
+        }
+        // enlever les notes de bases et -1
+        for(int i =0; i<items_of_user.size(); i++){
+            if((items_of_user.get(i) == -1.0f) || (items_of_user.get(i) == this.users.get(u).get(i))){
+                items_of_user.set(i,-100.0f);
+                System.out.println(items_of_user);
+            }
+        }
+        // chercher les k plus aimés par u
+
+        for(int s=0; s<k; s++){
+            float max = Collections.max(items_of_user);
+            int index_of_max = items_of_user.indexOf(Float.valueOf(max));
+            items_of_user.set(index_of_max,-100.0f);
+
+            int index_of_max_immutable = items_of_users_immutable.indexOf(Float.valueOf(max));
+            resultat.add(max);
+
+        }
+        return resultat;
     }
 
     public static void main (String[] args){
@@ -146,6 +204,11 @@ public class RecommenderSystem {
         for(int i = 0; i < matriceFinale.length; i++){
             System.out.println(Arrays.toString(matriceFinale[i]));
         }
+
+        System.out.println("---------------- RESULTAT FINALE----------------");
+        ArrayList<Float> resultatFinal = recSys.getBestItems(0,3);
+        System.out.println(resultatFinal);
+
 
     }
 }
